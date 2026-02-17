@@ -2,6 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use image::{ImageFormat, ImageReader};
 use rusqlite::{params, Connection};
 use serde_json::json;
 use walkdir::WalkDir;
@@ -129,13 +130,18 @@ impl CatalogDb {
             .map_err(|error| format!("failed to insert default edits: {error}"))?;
 
             let thumb_path = thumbnail_path(cache_root, image_id);
-            if !Path::new(&thumb_path).exists() {
-                fs::write(&thumb_path, [])
-                    .map_err(|error| format!("failed to write thumbnail placeholder: {error}"))?;
-            }
+            let (thumb_width, thumb_height) =
+                ensure_jpeg_thumbnail(file_path, Path::new(&thumb_path))?;
 
-            queries::upsert_thumbnail(&conn, image_id, &thumb_path, 256, 256, &now)
-                .map_err(|error| format!("failed to upsert thumbnail row: {error}"))?;
+            queries::upsert_thumbnail(
+                &conn,
+                image_id,
+                &thumb_path,
+                i64::from(thumb_width),
+                i64::from(thumb_height),
+                &now,
+            )
+            .map_err(|error| format!("failed to upsert thumbnail row: {error}"))?;
         }
 
         Ok(report)
@@ -150,6 +156,42 @@ impl CatalogDb {
         Connection::open(&self.path)
             .map_err(|error| format!("failed to open sqlite connection: {error}"))
     }
+}
+
+fn ensure_jpeg_thumbnail(source_path: &Path, thumb_path: &Path) -> Result<(u32, u32), String> {
+    if thumb_path.exists() {
+        let existing = ImageReader::open(thumb_path)
+            .map_err(|error| format!("failed to open thumbnail {:?}: {error}", thumb_path))?
+            .with_guessed_format()
+            .map_err(|error| {
+                format!(
+                    "failed to detect thumbnail format {:?}: {error}",
+                    thumb_path
+                )
+            })?
+            .decode()
+            .map_err(|error| format!("failed to decode thumbnail {:?}: {error}", thumb_path))?;
+        return Ok((existing.width(), existing.height()));
+    }
+
+    let image = ImageReader::open(source_path)
+        .map_err(|error| format!("failed to open source image {:?}: {error}", source_path))?
+        .with_guessed_format()
+        .map_err(|error| format!("failed to detect source format {:?}: {error}", source_path))?
+        .decode()
+        .map_err(|error| format!("failed to decode source image {:?}: {error}", source_path))?;
+
+    let thumb = image.thumbnail(256, 256);
+    if let Some(parent) = thumb_path.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|error| format!("failed to create thumbnail directory: {error}"))?;
+    }
+
+    thumb
+        .save_with_format(thumb_path, ImageFormat::Jpeg)
+        .map_err(|error| format!("failed to write thumbnail {:?}: {error}", thumb_path))?;
+
+    Ok((thumb.width(), thumb.height()))
 }
 
 fn now_iso_like() -> String {
@@ -185,6 +227,7 @@ fn is_supported_jpeg(path: &Path) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use image::{ImageBuffer, Rgb};
     use tempfile::TempDir;
 
     #[test]
@@ -215,8 +258,8 @@ mod tests {
         let cache_dir = dir.path().join("cache");
 
         fs::create_dir_all(&import_dir).expect("import dir should exist");
-        fs::write(import_dir.join("one.jpg"), b"jpeg-a").expect("file should be written");
-        fs::write(import_dir.join("two.jpeg"), b"jpeg-b").expect("file should be written");
+        write_test_jpeg(&import_dir.join("one.jpg"), 640, 360);
+        write_test_jpeg(&import_dir.join("two.jpeg"), 320, 320);
         fs::write(import_dir.join("skip.txt"), b"txt").expect("file should be written");
 
         let db = CatalogDb::new(db_path.to_string_lossy().to_string());
@@ -238,7 +281,29 @@ mod tests {
             .expect("query should succeed");
         assert_eq!(thumb_rows, 2);
 
-        let thumbs_dir = cache_dir.join("thumbs");
-        assert!(thumbs_dir.exists());
+        let mut stmt = conn
+            .prepare("SELECT file_path, width, height FROM thumbnails ORDER BY image_id")
+            .expect("statement should prepare");
+        let rows = stmt
+            .query_map([], |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, i64>(1)?,
+                    row.get::<_, i64>(2)?,
+                ))
+            })
+            .expect("query should work");
+
+        for row in rows {
+            let (file_path, width, height) = row.expect("row should decode");
+            assert!(Path::new(&file_path).exists());
+            assert!(width > 0 && width <= 256);
+            assert!(height > 0 && height <= 256);
+        }
+    }
+
+    fn write_test_jpeg(path: &Path, width: u32, height: u32) {
+        let img = ImageBuffer::from_fn(width, height, |_x, _y| Rgb([120_u8, 40_u8, 200_u8]));
+        img.save(path).expect("jpeg should be written");
     }
 }

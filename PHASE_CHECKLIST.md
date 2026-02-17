@@ -32,7 +32,7 @@ Overall status: `In Progress`
 Goals:
 - [x] Implement SQLite catalog and import flow for JPEG.
 - [ ] Build grid view with incremental loading.
-- [x] Generate and cache thumbnails (placeholder files + DB records).
+- [x] Generate and cache thumbnails.
 
 Deliverables:
 - [x] Folder import pipeline.
@@ -42,7 +42,7 @@ Deliverables:
 Exit criteria:
 - [ ] Import 100 JPEG images and show in grid within 2 seconds.
 - [x] Reopen app and load catalog state from SQLite.
-- [ ] Thumbnail cache hit behavior confirmed with non-placeholder thumbnail generation.
+- [x] Thumbnail cache hit behavior confirmed via existing-thumbnail reuse path.
 
 ## Phase 2: RAW Decode and Single Image View
 
@@ -140,5 +140,6 @@ Exit criteria:
 - [x] SQLite catalog schema and migration wiring.
 - [x] JPEG folder import pipeline with supported-format filtering.
 - [x] Default non-destructive edit row creation per imported image.
-- [x] Thumbnail cache pathing and DB thumbnail records.
+- [x] Real JPEG thumbnail generation + cache pathing and DB thumbnail records.
+- [x] CLI commands for `import <folder>` and `list`.
 - [x] Unit tests for schema initialization and JPEG import baseline.

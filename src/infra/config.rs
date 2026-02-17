@@ -12,3 +12,15 @@ impl Default for AppConfig {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_config_uses_local_catalog_and_cache_paths() {
+        let config = AppConfig::default();
+        assert_eq!(config.catalog_path, "catalog.sqlite3");
+        assert_eq!(config.cache_dir, "cache");
+    }
+}

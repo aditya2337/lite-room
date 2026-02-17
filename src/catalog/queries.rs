@@ -45,3 +45,96 @@ pub fn list_images(conn: &Connection) -> Result<Vec<ImageRecord>> {
 
     rows.collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rusqlite::Connection;
+
+    fn setup_conn() -> Connection {
+        let conn = Connection::open_in_memory().expect("in-memory sqlite should open");
+        conn.execute_batch(
+            "
+            CREATE TABLE images (
+                id INTEGER PRIMARY KEY,
+                file_path TEXT NOT NULL UNIQUE,
+                import_date TEXT NOT NULL,
+                capture_date TEXT,
+                camera_model TEXT,
+                iso INTEGER,
+                rating INTEGER NOT NULL DEFAULT 0,
+                flag INTEGER NOT NULL DEFAULT 0,
+                metadata_json TEXT NOT NULL
+            );
+
+            CREATE TABLE thumbnails (
+                image_id INTEGER PRIMARY KEY,
+                file_path TEXT NOT NULL,
+                width INTEGER NOT NULL,
+                height INTEGER NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+            ",
+        )
+        .expect("schema should be created");
+        conn
+    }
+
+    #[test]
+    fn upsert_thumbnail_inserts_then_updates() {
+        let conn = setup_conn();
+
+        upsert_thumbnail(&conn, 7, "cache/thumbs/7.jpg", 256, 256, "100")
+            .expect("first upsert should insert");
+        upsert_thumbnail(&conn, 7, "cache/thumbs/7-new.jpg", 512, 512, "101")
+            .expect("second upsert should update");
+
+        let row: (String, i64, i64, String) = conn
+            .query_row(
+                "SELECT file_path, width, height, updated_at FROM thumbnails WHERE image_id = 7",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
+            )
+            .expect("thumbnail row should exist");
+
+        assert_eq!(row.0, "cache/thumbs/7-new.jpg");
+        assert_eq!(row.1, 512);
+        assert_eq!(row.2, 512);
+        assert_eq!(row.3, "101");
+    }
+
+    #[test]
+    fn list_images_orders_by_capture_or_import_desc_then_id_desc() {
+        let conn = setup_conn();
+
+        conn.execute(
+            "INSERT INTO images (id, file_path, import_date, capture_date, rating, flag, metadata_json)
+             VALUES (?1, ?2, ?3, ?4, 0, 0, '{}')",
+            params![1_i64, "a.jpg", "100", Option::<String>::None],
+        )
+        .expect("row insert should succeed");
+        conn.execute(
+            "INSERT INTO images (id, file_path, import_date, capture_date, rating, flag, metadata_json)
+             VALUES (?1, ?2, ?3, ?4, 0, 0, '{}')",
+            params![2_i64, "b.jpg", "200", Option::<String>::None],
+        )
+        .expect("row insert should succeed");
+        conn.execute(
+            "INSERT INTO images (id, file_path, import_date, capture_date, rating, flag, metadata_json)
+             VALUES (?1, ?2, ?3, ?4, 0, 0, '{}')",
+            params![3_i64, "c.jpg", "150", Some("300".to_string())],
+        )
+        .expect("row insert should succeed");
+        conn.execute(
+            "INSERT INTO images (id, file_path, import_date, capture_date, rating, flag, metadata_json)
+             VALUES (?1, ?2, ?3, ?4, 0, 0, '{}')",
+            params![4_i64, "d.jpg", "250", Some("300".to_string())],
+        )
+        .expect("row insert should succeed");
+
+        let images = list_images(&conn).expect("query should succeed");
+        let ids: Vec<i64> = images.into_iter().map(|image| image.id).collect();
+
+        assert_eq!(ids, vec![4, 3, 2, 1]);
+    }
+}
