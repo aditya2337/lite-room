@@ -1,0 +1,16 @@
+[package]
+name = "lite-room-adapters"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+lite-room-domain = { path = "../domain" }
+lite-room-application = { path = "../application" }
+image = { version = "=0.24.9", default-features = false, features = ["jpeg"] }
+rusqlite = { version = "=0.31.0", features = ["bundled"] }
+serde_json = "1.0.105"
+walkdir = "2.5.0"
+
+[dev-dependencies]
+tempfile = "=3.17.1"

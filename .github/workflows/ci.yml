@@ -17,6 +17,13 @@ jobs:
         with:
           components: rustfmt, clippy
 
+      - name: Check package boundaries
+        run: |
+          cargo check -p lite-room-domain
+          cargo check -p lite-room-application
+          cargo check -p lite-room-adapters
+          cargo check -p lite-room-drivers
+
       - name: Format
         run: cargo fmt --all -- --check
 
