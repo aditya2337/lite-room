@@ -14,6 +14,7 @@ lite-room is a lightweight, non-destructive desktop RAW photo editor focused on 
 - Product spec: `/Users/aditya/workspace/lite-room/SPEC.md`
 - Architecture design: `/Users/aditya/workspace/lite-room/ARCHITECTURE.md`
 - Build plan: `/Users/aditya/workspace/lite-room/BUILD_PLAN.md`
+- Phase checklist: `/Users/aditya/workspace/lite-room/PHASE_CHECKLIST.md`
 - MCP setup checklist: `/Users/aditya/workspace/lite-room/MCP_SETUP_CHECKLIST.md`
 
 ## Codex Skills (Repo-local Drafts)
