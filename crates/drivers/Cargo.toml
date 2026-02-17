@@ -12,3 +12,4 @@ path = "src/main.rs"
 lite-room-domain = { path = "../domain" }
 lite-room-application = { path = "../application" }
 lite-room-adapters = { path = "../adapters" }
+minifb = "0.25.0"
