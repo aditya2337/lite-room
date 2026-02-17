@@ -4,10 +4,10 @@ lite-room is a lightweight, non-destructive desktop RAW photo editor focused on 
 
 ## Workspace Layout
 
-- `/Users/gvadityanaidu/personal/lite-room/crates/domain`: entities, value objects, and domain invariants
-- `/Users/gvadityanaidu/personal/lite-room/crates/application`: use-cases and inbound ports
-- `/Users/gvadityanaidu/personal/lite-room/crates/adapters`: sqlite/fs/image implementations and presenters
-- `/Users/gvadityanaidu/personal/lite-room/crates/drivers`: CLI/UI runtime entrypoints (`lite-room` binary)
+- `/absolute/path/to/lite-room/crates/domain`: entities, value objects, and domain invariants
+- `/absolute/path/to/lite-room/crates/application`: use-cases and inbound ports
+- `/absolute/path/to/lite-room/crates/adapters`: sqlite/fs/image implementations and presenters
+- `/absolute/path/to/lite-room/crates/drivers`: CLI/UI runtime entrypoints (`lite-room` binary)
 
 Dependency direction is strictly inward:
 `drivers -> adapters -> application -> domain`.
