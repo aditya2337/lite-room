@@ -1,6 +1,6 @@
-# Lumiere
+# lite-room
 
-Lumiere is a lightweight, non-destructive desktop RAW photo editor focused on high-performance local workflows.
+lite-room is a lightweight, non-destructive desktop RAW photo editor focused on high-performance local workflows.
 
 ## v1 Focus
 

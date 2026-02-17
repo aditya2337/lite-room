@@ -1,8 +1,8 @@
-# Lumiere Architecture Design (v1)
+# lite-room Architecture Design (v1)
 
 ## 1. Objectives
 
-Lumiere v1 is a desktop-first, non-destructive RAW editor optimized for fast preview feedback and local catalog scale.
+lite-room v1 is a desktop-first, non-destructive RAW editor optimized for fast preview feedback and local catalog scale.
 
 Key targets:
 - Preview latency under 50 ms after slider changes (scaled preview).

@@ -1,5 +1,5 @@
 <idea>
-# Lumiere
+# lite-room
 
 ## Lightweight Non Destructive RAW Photo Editor
 

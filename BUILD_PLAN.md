@@ -1,4 +1,4 @@
-# Lumiere Build Plan (v1)
+# lite-room Build Plan (v1)
 
 ## 1. Plan Summary
 
