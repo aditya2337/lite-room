@@ -46,6 +46,29 @@ pub fn list_images(conn: &Connection) -> Result<Vec<ImageRecord>> {
     rows.collect()
 }
 
+pub fn find_image_by_id(conn: &Connection, image_id: i64) -> Result<Option<ImageRecord>> {
+    let mut stmt = conn.prepare(
+        "SELECT id, file_path, import_date, capture_date, rating, flag, metadata_json
+         FROM images
+         WHERE id = ?1",
+    )?;
+
+    let mut rows = stmt.query(params![image_id])?;
+    if let Some(row) = rows.next()? {
+        return Ok(Some(ImageRecord {
+            id: row.get(0)?,
+            file_path: row.get(1)?,
+            import_date: row.get(2)?,
+            capture_date: row.get(3)?,
+            rating: row.get(4)?,
+            flag: row.get(5)?,
+            metadata_json: row.get(6)?,
+        }));
+    }
+
+    Ok(None)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -136,5 +159,25 @@ mod tests {
         let ids: Vec<i64> = images.into_iter().map(|image| image.id).collect();
 
         assert_eq!(ids, vec![4, 3, 2, 1]);
+    }
+
+    #[test]
+    fn find_image_by_id_returns_matching_row() {
+        let conn = setup_conn();
+        conn.execute(
+            "INSERT INTO images (id, file_path, import_date, capture_date, rating, flag, metadata_json)
+             VALUES (?1, ?2, ?3, NULL, 0, 0, '{}')",
+            params![11_i64, "x.jpg", "100"],
+        )
+        .expect("row insert should succeed");
+
+        let found = find_image_by_id(&conn, 11)
+            .expect("query should succeed")
+            .expect("row should exist");
+        assert_eq!(found.id, 11);
+        assert_eq!(found.file_path, "x.jpg");
+
+        let missing = find_image_by_id(&conn, 999).expect("query should succeed");
+        assert!(missing.is_none());
     }
 }

@@ -2,7 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use image::{ImageFormat, ImageReader};
+use image::{ImageBuffer, ImageFormat, ImageReader, Rgb};
 use rusqlite::{params, Connection};
 use serde_json::json;
 use walkdir::WalkDir;
@@ -48,7 +48,7 @@ impl CatalogDb {
         Ok(())
     }
 
-    pub fn import_jpegs_from_folder(
+    pub fn import_images_from_folder(
         &self,
         folder: &str,
         cache_root: &str,
@@ -78,7 +78,7 @@ impl CatalogDb {
             report.scanned_files += 1;
 
             let file_path = entry.path();
-            if !is_supported_jpeg(file_path) {
+            if !is_supported_format(file_path) {
                 continue;
             }
 
@@ -131,7 +131,7 @@ impl CatalogDb {
 
             let thumb_path = thumbnail_path(cache_root, image_id);
             let (thumb_width, thumb_height) =
-                ensure_jpeg_thumbnail(file_path, Path::new(&thumb_path))?;
+                ensure_thumbnail_for_image(file_path, Path::new(&thumb_path))?;
 
             queries::upsert_thumbnail(
                 &conn,
@@ -147,15 +147,36 @@ impl CatalogDb {
         Ok(report)
     }
 
+    pub fn import_jpegs_from_folder(
+        &self,
+        folder: &str,
+        cache_root: &str,
+    ) -> Result<ImportReport, String> {
+        self.import_images_from_folder(folder, cache_root)
+    }
+
     pub fn list_images(&self) -> Result<Vec<ImageRecord>, String> {
         let conn = self.open_connection()?;
         queries::list_images(&conn).map_err(|error| format!("failed to list images: {error}"))
+    }
+
+    pub fn find_image_by_id(&self, image_id: i64) -> Result<Option<ImageRecord>, String> {
+        let conn = self.open_connection()?;
+        queries::find_image_by_id(&conn, image_id)
+            .map_err(|error| format!("failed to find image by id: {error}"))
     }
 
     fn open_connection(&self) -> Result<Connection, String> {
         Connection::open(&self.path)
             .map_err(|error| format!("failed to open sqlite connection: {error}"))
     }
+}
+
+fn ensure_thumbnail_for_image(source_path: &Path, thumb_path: &Path) -> Result<(u32, u32), String> {
+    if is_supported_jpeg(source_path) {
+        return ensure_jpeg_thumbnail(source_path, thumb_path);
+    }
+    ensure_placeholder_thumbnail(thumb_path)
 }
 
 fn ensure_jpeg_thumbnail(source_path: &Path, thumb_path: &Path) -> Result<(u32, u32), String> {
@@ -194,6 +215,34 @@ fn ensure_jpeg_thumbnail(source_path: &Path, thumb_path: &Path) -> Result<(u32, 
     Ok((thumb.width(), thumb.height()))
 }
 
+fn ensure_placeholder_thumbnail(thumb_path: &Path) -> Result<(u32, u32), String> {
+    if let Some(parent) = thumb_path.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|error| format!("failed to create thumbnail directory: {error}"))?;
+    }
+
+    if thumb_path.exists() {
+        let existing = ImageReader::open(thumb_path)
+            .map_err(|error| format!("failed to open thumbnail {:?}: {error}", thumb_path))?
+            .with_guessed_format()
+            .map_err(|error| {
+                format!(
+                    "failed to detect thumbnail format {:?}: {error}",
+                    thumb_path
+                )
+            })?
+            .decode()
+            .map_err(|error| format!("failed to decode thumbnail {:?}: {error}", thumb_path))?;
+        return Ok((existing.width(), existing.height()));
+    }
+
+    let placeholder = ImageBuffer::from_fn(256, 256, |_x, _y| Rgb([48_u8, 48_u8, 48_u8]));
+    placeholder
+        .save_with_format(thumb_path, ImageFormat::Jpeg)
+        .map_err(|error| format!("failed to write thumbnail {:?}: {error}", thumb_path))?;
+    Ok((256, 256))
+}
+
 fn now_iso_like() -> String {
     let secs = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -222,6 +271,20 @@ fn is_supported_jpeg(path: &Path) -> bool {
             ext == "jpg" || ext == "jpeg"
         })
         .unwrap_or(false)
+}
+
+fn is_supported_raw(path: &Path) -> bool {
+    path.extension()
+        .and_then(|ext| ext.to_str())
+        .map(|ext| {
+            let ext = ext.to_ascii_lowercase();
+            ext == "cr2" || ext == "nef" || ext == "arw" || ext == "dng"
+        })
+        .unwrap_or(false)
+}
+
+fn is_supported_format(path: &Path) -> bool {
+    is_supported_jpeg(path) || is_supported_raw(path)
 }
 
 #[cfg(test)]
@@ -266,7 +329,7 @@ mod tests {
         db.initialize().expect("schema should initialize");
 
         let report = db
-            .import_jpegs_from_folder(&import_dir.to_string_lossy(), &cache_dir.to_string_lossy())
+            .import_images_from_folder(&import_dir.to_string_lossy(), &cache_dir.to_string_lossy())
             .expect("import should succeed");
 
         assert_eq!(report.supported_files, 2);
@@ -300,6 +363,34 @@ mod tests {
             assert!(width > 0 && width <= 256);
             assert!(height > 0 && height <= 256);
         }
+    }
+
+    #[test]
+    fn import_images_includes_raw_extensions() {
+        let dir = TempDir::new().expect("tempdir should be created");
+        let db_path = dir.path().join("catalog.sqlite3");
+        let import_dir = dir.path().join("imports");
+        let cache_dir = dir.path().join("cache");
+
+        fs::create_dir_all(&import_dir).expect("import dir should exist");
+        write_test_jpeg(&import_dir.join("a.jpg"), 800, 600);
+        fs::write(import_dir.join("b.nef"), b"fake-raw")
+            .expect("raw placeholder should be written");
+        fs::write(import_dir.join("c.cr2"), b"fake-raw")
+            .expect("raw placeholder should be written");
+        fs::write(import_dir.join("skip.txt"), b"txt").expect("txt should be written");
+
+        let db = CatalogDb::new(db_path.to_string_lossy().to_string());
+        db.initialize().expect("schema should initialize");
+        let report = db
+            .import_images_from_folder(&import_dir.to_string_lossy(), &cache_dir.to_string_lossy())
+            .expect("import should succeed");
+
+        assert_eq!(report.supported_files, 3);
+        assert_eq!(report.newly_imported, 3);
+
+        let images = db.list_images().expect("list should work");
+        assert_eq!(images.len(), 3);
     }
 
     fn write_test_jpeg(path: &Path, width: u32, height: u32) {

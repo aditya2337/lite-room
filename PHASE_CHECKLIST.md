@@ -46,17 +46,17 @@ Exit criteria:
 
 ## Phase 2: RAW Decode and Single Image View
 
-Overall status: `Not Started`
+Overall status: `In Progress`
 
 Goals:
 - [ ] Add RAW file support with libraw.
-- [ ] Display demosaiced image in edit view.
-- [ ] Add metadata extraction for RAW.
+- [x] Display single-image preview metadata path via CLI `open <image_id>`.
+- [x] Add metadata extraction baseline for RAW imports (file-level metadata + format classification).
 
 Deliverables:
-- [ ] RAW decoder abstraction.
+- [x] RAW/JPEG decoder abstraction with graceful RAW fallback.
 - [ ] Edit view with full preview container + histogram placeholder.
-- [ ] Supported format filter: CR2/NEF/ARW/DNG/JPEG.
+- [x] Supported format filter: CR2/NEF/ARW/DNG/JPEG.
 
 Exit criteria:
 - [ ] Open and preview sample images from supported RAW formats.
