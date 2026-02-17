@@ -14,6 +14,16 @@ lite-room is a lightweight, non-destructive desktop RAW photo editor focused on 
 - Product spec: `/Users/aditya/workspace/lite-room/SPEC.md`
 - Architecture design: `/Users/aditya/workspace/lite-room/ARCHITECTURE.md`
 - Build plan: `/Users/aditya/workspace/lite-room/BUILD_PLAN.md`
+- MCP setup checklist: `/Users/aditya/workspace/lite-room/MCP_SETUP_CHECKLIST.md`
+
+## Codex Skills (Repo-local Drafts)
+
+- Rust development: `/Users/aditya/workspace/lite-room/skills/rust-dev/SKILL.md`
+- WGPU shader pipeline: `/Users/aditya/workspace/lite-room/skills/wgpu-shader/SKILL.md`
+- SQLite migrations: `/Users/aditya/workspace/lite-room/skills/sqlite-migrations/SKILL.md`
+- Image pipeline validation: `/Users/aditya/workspace/lite-room/skills/image-pipeline/SKILL.md`
+- Benchmarking/perf: `/Users/aditya/workspace/lite-room/skills/benchmarking/SKILL.md`
+- Release engineering: `/Users/aditya/workspace/lite-room/skills/release-engineering/SKILL.md`
 
 ## Planned Core Features
 
