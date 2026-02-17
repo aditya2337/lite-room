@@ -61,8 +61,8 @@ Key targets:
 
 ## 4.2 Cache Service
 - On-disk cache folders:
-  - `/Users/gvadityanaidu/personal/lite-room/cache/thumbs/` for grid thumbnails.
-  - `/Users/gvadityanaidu/personal/lite-room/cache/previews/` for scaled edit previews.
+  - `/lite-room/cache/thumbs/` for grid thumbnails.
+  - `/lite-room/cache/previews/` for scaled edit previews.
 - Cache key includes:
   - image id
   - source file modified timestamp
@@ -207,31 +207,31 @@ Default edit params are stored on first import (or first open) to guarantee dete
 ## 11. Folder/Layout Proposal
 
 ```text
-/Users/gvadityanaidu/personal/lite-room/src/
-/Users/gvadityanaidu/personal/lite-room/src/app/
-/Users/gvadityanaidu/personal/lite-room/src/app/controller.rs
-/Users/gvadityanaidu/personal/lite-room/src/app/state.rs
-/Users/gvadityanaidu/personal/lite-room/src/app/events.rs
-/Users/gvadityanaidu/personal/lite-room/src/ui/
-/Users/gvadityanaidu/personal/lite-room/src/ui/grid_view.rs
-/Users/gvadityanaidu/personal/lite-room/src/ui/edit_view.rs
-/Users/gvadityanaidu/personal/lite-room/src/ui/histogram.rs
-/Users/gvadityanaidu/personal/lite-room/src/engine/
-/Users/gvadityanaidu/personal/lite-room/src/engine/raw_decode.rs
-/Users/gvadityanaidu/personal/lite-room/src/engine/pipeline.rs
-/Users/gvadityanaidu/personal/lite-room/src/engine/renderer_wgpu.rs
-/Users/gvadityanaidu/personal/lite-room/src/engine/export.rs
-/Users/gvadityanaidu/personal/lite-room/src/catalog/
-/Users/gvadityanaidu/personal/lite-room/src/catalog/db.rs
-/Users/gvadityanaidu/personal/lite-room/src/catalog/models.rs
-/Users/gvadityanaidu/personal/lite-room/src/catalog/queries.rs
-/Users/gvadityanaidu/personal/lite-room/src/catalog/migrations/
-/Users/gvadityanaidu/personal/lite-room/src/cache/
-/Users/gvadityanaidu/personal/lite-room/src/cache/thumbs.rs
-/Users/gvadityanaidu/personal/lite-room/src/cache/previews.rs
-/Users/gvadityanaidu/personal/lite-room/src/infra/
-/Users/gvadityanaidu/personal/lite-room/src/infra/logging.rs
-/Users/gvadityanaidu/personal/lite-room/src/infra/config.rs
+/lite-room/src/
+/lite-room/src/app/
+/lite-room/src/app/controller.rs
+/lite-room/src/app/state.rs
+/lite-room/src/app/events.rs
+/lite-room/src/ui/
+/lite-room/src/ui/grid_view.rs
+/lite-room/src/ui/edit_view.rs
+/lite-room/src/ui/histogram.rs
+/lite-room/src/engine/
+/lite-room/src/engine/raw_decode.rs
+/lite-room/src/engine/pipeline.rs
+/lite-room/src/engine/renderer_wgpu.rs
+/lite-room/src/engine/export.rs
+/lite-room/src/catalog/
+/lite-room/src/catalog/db.rs
+/lite-room/src/catalog/models.rs
+/lite-room/src/catalog/queries.rs
+/lite-room/src/catalog/migrations/
+/lite-room/src/cache/
+/lite-room/src/cache/thumbs.rs
+/lite-room/src/cache/previews.rs
+/lite-room/src/infra/
+/lite-room/src/infra/logging.rs
+/lite-room/src/infra/config.rs
 ```
 
 ## 12. Decision Points

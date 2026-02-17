@@ -36,7 +36,7 @@ Purpose:
 - Structured file operations and artifact management in workspace.
 
 Checklist:
-- [ ] Configure filesystem MCP with workspace root `/Users/gvadityanaidu/personal/lite-room`.
+- [ ] Configure filesystem MCP with workspace root `/lite-room`.
 - [ ] Confirm read/write permissions in project directories.
 - [ ] Confirm access to cache/test-assets directories when added.
 
@@ -98,7 +98,7 @@ Rationale:
 
 ## 8. Repo Integration Tasks
 
-- [ ] Add a section in `/Users/gvadityanaidu/personal/lite-room/README.md` linking this checklist.
+- [ ] Add a section in `/lite-room/README.md` linking this checklist.
 - [ ] Create GitHub labels: `perf`, `rendering`, `catalog`, `export`, `bug`, `milestone`.
-- [ ] Create milestone issues aligned to `/Users/gvadityanaidu/personal/lite-room/BUILD_PLAN.md`.
+- [ ] Create milestone issues aligned to `/lite-room/BUILD_PLAN.md`.
 - [ ] Add a performance issue template that records hardware and dataset details.

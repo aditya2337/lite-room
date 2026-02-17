@@ -4,16 +4,16 @@
 
 This repository follows a strict Clean Architecture workspace layout:
 
-- `/Users/gvadityanaidu/personal/lite-room/crates/domain`
+- `/lite-room/crates/domain`
   - Pure business/domain rules only.
   - No IO/framework/database/UI dependencies.
-- `/Users/gvadityanaidu/personal/lite-room/crates/application`
+- `/lite-room/crates/application`
   - Use-cases and ports (traits/interfaces).
   - Depends only on `domain`.
-- `/Users/gvadityanaidu/personal/lite-room/crates/adapters`
+- `/lite-room/crates/adapters`
   - Implementations of application ports (sqlite/fs/image/presenters).
   - Depends on `application` and `domain`.
-- `/Users/gvadityanaidu/personal/lite-room/crates/drivers`
+- `/lite-room/crates/drivers`
   - CLI/UI/runtime wiring and entrypoints.
   - Depends on `adapters`, `application`, and `domain` for DTO/read models.
 
