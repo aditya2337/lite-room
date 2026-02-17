@@ -61,8 +61,8 @@ Key targets:
 
 ## 4.2 Cache Service
 - On-disk cache folders:
-  - `cache/thumbs/` for grid thumbnails.
-  - `cache/previews/` for scaled edit previews.
+  - `/Users/gvadityanaidu/personal/lite-room/cache/thumbs/` for grid thumbnails.
+  - `/Users/gvadityanaidu/personal/lite-room/cache/previews/` for scaled edit previews.
 - Cache key includes:
   - image id
   - source file modified timestamp
@@ -207,31 +207,31 @@ Default edit params are stored on first import (or first open) to guarantee dete
 ## 11. Folder/Layout Proposal
 
 ```text
-src/
-  app/
-    controller.rs
-    state.rs
-    events.rs
-  ui/
-    grid_view.rs
-    edit_view.rs
-    histogram.rs
-  engine/
-    raw_decode.rs
-    pipeline.rs
-    renderer_wgpu.rs
-    export.rs
-  catalog/
-    db.rs
-    models.rs
-    queries.rs
-    migrations/
-  cache/
-    thumbs.rs
-    previews.rs
-  infra/
-    logging.rs
-    config.rs
+/Users/gvadityanaidu/personal/lite-room/src/
+/Users/gvadityanaidu/personal/lite-room/src/app/
+/Users/gvadityanaidu/personal/lite-room/src/app/controller.rs
+/Users/gvadityanaidu/personal/lite-room/src/app/state.rs
+/Users/gvadityanaidu/personal/lite-room/src/app/events.rs
+/Users/gvadityanaidu/personal/lite-room/src/ui/
+/Users/gvadityanaidu/personal/lite-room/src/ui/grid_view.rs
+/Users/gvadityanaidu/personal/lite-room/src/ui/edit_view.rs
+/Users/gvadityanaidu/personal/lite-room/src/ui/histogram.rs
+/Users/gvadityanaidu/personal/lite-room/src/engine/
+/Users/gvadityanaidu/personal/lite-room/src/engine/raw_decode.rs
+/Users/gvadityanaidu/personal/lite-room/src/engine/pipeline.rs
+/Users/gvadityanaidu/personal/lite-room/src/engine/renderer_wgpu.rs
+/Users/gvadityanaidu/personal/lite-room/src/engine/export.rs
+/Users/gvadityanaidu/personal/lite-room/src/catalog/
+/Users/gvadityanaidu/personal/lite-room/src/catalog/db.rs
+/Users/gvadityanaidu/personal/lite-room/src/catalog/models.rs
+/Users/gvadityanaidu/personal/lite-room/src/catalog/queries.rs
+/Users/gvadityanaidu/personal/lite-room/src/catalog/migrations/
+/Users/gvadityanaidu/personal/lite-room/src/cache/
+/Users/gvadityanaidu/personal/lite-room/src/cache/thumbs.rs
+/Users/gvadityanaidu/personal/lite-room/src/cache/previews.rs
+/Users/gvadityanaidu/personal/lite-room/src/infra/
+/Users/gvadityanaidu/personal/lite-room/src/infra/logging.rs
+/Users/gvadityanaidu/personal/lite-room/src/infra/config.rs
 ```
 
 ## 12. Decision Points
