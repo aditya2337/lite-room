@@ -137,12 +137,27 @@ fn run_command(
 ) -> Result<(), CommandError> {
     match command? {
         Command::Ui => {
-            let image_count = service
+            let images = service
                 .list_images(ListImagesCommand)
-                .map_err(|error| CommandError::Runtime(error.to_string()))?
-                .len();
-            ui::launch_window(&config.catalog_path, &config.cache_dir, image_count)
-                .map_err(CommandError::Runtime)
+                .map_err(|error| CommandError::Runtime(error.to_string()))?;
+            let image_count = images.len();
+            let active_image_id = images.first().map(|image| image.id);
+            let initial_params = if let Some(image_id) = active_image_id {
+                service
+                    .show_edit(ShowEditCommand { image_id })
+                    .map_err(|error| CommandError::Runtime(error.to_string()))?
+            } else {
+                EditParams::default()
+            };
+            ui::launch_window(
+                service,
+                &config.catalog_path,
+                &config.cache_dir,
+                image_count,
+                active_image_id,
+                initial_params,
+            )
+            .map_err(CommandError::Runtime)
         }
         Command::Import { folder } => {
             let report = service

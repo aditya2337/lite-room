@@ -68,13 +68,13 @@ Overall status: `In Progress`
 
 Goals:
 - [x] Implement `EditParams` model and persistence.
-- [ ] Wire sliders: exposure, contrast, temperature, tint, highlights, shadows.
-- [ ] Autosave edits with debounce.
+- [x] Wire sliders: exposure, contrast, temperature, tint, highlights, shadows.
+- [x] Autosave edits with debounce.
 
 Deliverables:
 - [x] Edit param serialization/deserialization JSON.
 - [x] DB read/write path for edits table.
-- [ ] Slider UI + app state synchronization.
+- [x] Slider UI + app state synchronization.
 
 Exit criteria:
 - [ ] Slider changes persist across app restart.
