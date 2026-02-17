@@ -3,7 +3,9 @@ mod queries;
 use std::fs;
 use std::path::PathBuf;
 
-use lite_room_application::{ApplicationError, CatalogRepository, NewImage, UpsertImageResult};
+use lite_room_application::{
+    ApplicationError, CatalogRepository, NewImage, StoredEdit, UpsertImageResult,
+};
 use lite_room_domain::{ImageId, ImageRecord};
 use rusqlite::{params, Connection};
 
@@ -96,13 +98,29 @@ impl CatalogRepository for SqliteCatalogRepository {
         updated_at: &str,
     ) -> Result<(), ApplicationError> {
         let conn = self.open_connection()?;
-        conn.execute(
-            "INSERT OR IGNORE INTO edits (image_id, edit_params_json, updated_at)
-             VALUES (?1, ?2, ?3)",
-            params![image_id.get(), edit_params_json, updated_at],
-        )
-        .map_err(|error| ApplicationError::Persistence(error.to_string()))?;
-        Ok(())
+        queries::ensure_default_edit(&conn, image_id.get(), edit_params_json, updated_at)
+            .map_err(|error| ApplicationError::Persistence(error.to_string()))
+    }
+
+    fn upsert_edit(
+        &self,
+        image_id: ImageId,
+        edit_params_json: &str,
+        updated_at: &str,
+    ) -> Result<(), ApplicationError> {
+        let conn = self.open_connection()?;
+        queries::upsert_edit(&conn, image_id.get(), edit_params_json, updated_at)
+            .map_err(|error| ApplicationError::Persistence(error.to_string()))
+    }
+
+    fn find_edit(&self, image_id: ImageId) -> Result<Option<StoredEdit>, ApplicationError> {
+        let conn = self.open_connection()?;
+        let found = queries::find_edit(&conn, image_id.get())
+            .map_err(|error| ApplicationError::Persistence(error.to_string()))?;
+        Ok(found.map(|(edit_params_json, updated_at)| StoredEdit {
+            edit_params_json,
+            updated_at,
+        }))
     }
 
     fn upsert_thumbnail(
@@ -134,6 +152,7 @@ impl CatalogRepository for SqliteCatalogRepository {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use lite_room_domain::EditParams;
     use tempfile::TempDir;
 
     #[test]
@@ -152,5 +171,45 @@ mod tests {
             )
             .expect("query");
         assert_eq!(count, 1);
+    }
+
+    #[test]
+    fn upsert_and_find_edit_roundtrip() {
+        let dir = TempDir::new().expect("tempdir");
+        let db_path = dir.path().join("catalog.sqlite3");
+        let repo = SqliteCatalogRepository::new(db_path.to_string_lossy().to_string());
+        repo.initialize().expect("initialize");
+
+        let now = "2026-02-17T00:00:00Z";
+        let upsert = repo
+            .upsert_image(&NewImage {
+                file_path: "/tmp/sample.jpg".to_string(),
+                import_date: now.to_string(),
+                capture_date: None,
+                camera_model: None,
+                iso: None,
+                rating: 0,
+                flag: 0,
+                metadata_json: "{}".to_string(),
+            })
+            .expect("upsert image");
+
+        let params = EditParams {
+            exposure: 1.0,
+            contrast: -0.5,
+            temperature: 2.0,
+            tint: 3.0,
+            highlights: 4.0,
+            shadows: 5.0,
+        };
+        let params_json = serde_json::to_string(&params).expect("json");
+
+        repo.upsert_edit(upsert.image_id, &params_json, now)
+            .expect("upsert edit");
+        let stored = repo
+            .find_edit(upsert.image_id)
+            .expect("find edit")
+            .expect("edit exists");
+        assert_eq!(stored.edit_params_json, params_json);
     }
 }

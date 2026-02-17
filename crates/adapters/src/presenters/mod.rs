@@ -1,4 +1,4 @@
-use lite_room_domain::{DecodedImage, ImageRecord};
+use lite_room_domain::{DecodedImage, EditParams, ImageRecord};
 
 pub fn present_image_row(image: &ImageRecord) -> String {
     format!(
@@ -14,6 +14,19 @@ pub fn present_decoded(image_id: i64, decoded: &DecodedImage) -> String {
     format!(
         "opened image {} (kind={:?}, {}x{})",
         image_id, decoded.kind, decoded.width, decoded.height
+    )
+}
+
+pub fn present_edit_params(image_id: i64, params: &EditParams) -> String {
+    format!(
+        "image {} edit exposure={} contrast={} temperature={} tint={} highlights={} shadows={}",
+        image_id,
+        params.exposure,
+        params.contrast,
+        params.temperature,
+        params.tint,
+        params.highlights,
+        params.shadows
     )
 }
 

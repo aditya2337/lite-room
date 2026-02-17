@@ -22,6 +22,12 @@ pub struct UpsertImageResult {
     pub inserted: bool,
 }
 
+#[derive(Debug, Clone)]
+pub struct StoredEdit {
+    pub edit_params_json: String,
+    pub updated_at: String,
+}
+
 pub trait CatalogRepository {
     fn initialize(&self) -> Result<(), ApplicationError>;
 
@@ -33,6 +39,15 @@ pub trait CatalogRepository {
         edit_params_json: &str,
         updated_at: &str,
     ) -> Result<(), ApplicationError>;
+
+    fn upsert_edit(
+        &self,
+        image_id: ImageId,
+        edit_params_json: &str,
+        updated_at: &str,
+    ) -> Result<(), ApplicationError>;
+
+    fn find_edit(&self, image_id: ImageId) -> Result<Option<StoredEdit>, ApplicationError>;
 
     fn upsert_thumbnail(
         &self,

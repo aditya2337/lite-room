@@ -64,16 +64,16 @@ Exit criteria:
 
 ## Phase 3: Non-Destructive Edit Model
 
-Overall status: `Not Started`
+Overall status: `In Progress`
 
 Goals:
-- [ ] Implement `EditParams` model and persistence.
+- [x] Implement `EditParams` model and persistence.
 - [ ] Wire sliders: exposure, contrast, temperature, tint, highlights, shadows.
 - [ ] Autosave edits with debounce.
 
 Deliverables:
-- [ ] Edit param serialization/deserialization JSON.
-- [ ] DB read/write path for edits table.
+- [x] Edit param serialization/deserialization JSON.
+- [x] DB read/write path for edits table.
 - [ ] Slider UI + app state synchronization.
 
 Exit criteria:

@@ -3,7 +3,8 @@ use serde_json::json;
 
 use crate::{
     ApplicationError, BootstrapCatalogCommand, CatalogRepository, Clock, FileScanner, ImageDecoder,
-    ImportFolderCommand, ListImagesCommand, OpenImageCommand, ThumbnailGenerator,
+    ImportFolderCommand, ListImagesCommand, OpenImageCommand, SetEditCommand, ShowEditCommand,
+    ThumbnailGenerator,
 };
 
 pub struct ApplicationService {
@@ -129,6 +130,32 @@ impl ApplicationService {
         self.decoder
             .decode_for_preview(std::path::Path::new(&image.file_path))
     }
+
+    pub fn show_edit(&self, command: ShowEditCommand) -> Result<EditParams, ApplicationError> {
+        self.catalog
+            .find_edit(command.image_id)?
+            .map(|stored| {
+                serde_json::from_str::<EditParams>(&stored.edit_params_json)
+                    .map_err(|error| ApplicationError::Persistence(error.to_string()))
+            })
+            .transpose()?
+            .ok_or_else(|| {
+                ApplicationError::NotFound(format!(
+                    "edit not found for image id={}",
+                    command.image_id.get()
+                ))
+            })
+    }
+
+    pub fn set_edit(&self, command: SetEditCommand) -> Result<(), ApplicationError> {
+        command.params.validate()?;
+        let now = self.clock.now_timestamp_string();
+        let edit_json = serde_json::to_string(&command.params)
+            .map_err(|error| ApplicationError::Persistence(error.to_string()))?;
+        self.catalog
+            .upsert_edit(command.image_id, &edit_json, &now)?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -144,6 +171,7 @@ mod tests {
         initialized: std::cell::Cell<bool>,
         next_id: std::cell::Cell<i64>,
         images: std::cell::RefCell<HashMap<i64, ImageRecord>>,
+        edits: std::cell::RefCell<HashMap<i64, crate::StoredEdit>>,
     }
 
     impl FakeCatalog {
@@ -152,6 +180,7 @@ mod tests {
                 initialized: std::cell::Cell::new(false),
                 next_id: std::cell::Cell::new(1),
                 images: std::cell::RefCell::new(HashMap::new()),
+                edits: std::cell::RefCell::new(HashMap::new()),
             }
         }
     }
@@ -200,11 +229,41 @@ mod tests {
 
         fn ensure_default_edit(
             &self,
-            _image_id: ImageId,
-            _edit_params_json: &str,
-            _updated_at: &str,
+            image_id: ImageId,
+            edit_params_json: &str,
+            updated_at: &str,
         ) -> Result<(), ApplicationError> {
+            self.edits
+                .borrow_mut()
+                .entry(image_id.get())
+                .or_insert_with(|| crate::StoredEdit {
+                    edit_params_json: edit_params_json.to_string(),
+                    updated_at: updated_at.to_string(),
+                });
             Ok(())
+        }
+
+        fn upsert_edit(
+            &self,
+            image_id: ImageId,
+            edit_params_json: &str,
+            updated_at: &str,
+        ) -> Result<(), ApplicationError> {
+            self.edits.borrow_mut().insert(
+                image_id.get(),
+                crate::StoredEdit {
+                    edit_params_json: edit_params_json.to_string(),
+                    updated_at: updated_at.to_string(),
+                },
+            );
+            Ok(())
+        }
+
+        fn find_edit(
+            &self,
+            image_id: ImageId,
+        ) -> Result<Option<crate::StoredEdit>, ApplicationError> {
+            Ok(self.edits.borrow().get(&image_id.get()).cloned())
         }
 
         fn upsert_thumbnail(
@@ -357,5 +416,54 @@ mod tests {
         });
 
         assert!(matches!(result, Err(ApplicationError::NotFound(_))));
+    }
+
+    #[test]
+    fn set_and_show_edit_roundtrip() {
+        let service = ApplicationService::new(
+            Box::new(FakeCatalog::new()),
+            Box::new(FakeScanner {
+                files: vec![PathBuf::from("/tmp/sample.jpg")],
+            }),
+            Box::new(FakeThumbs),
+            Box::new(FakeDecoder),
+            Box::new(FakeClock),
+        );
+
+        let report = service
+            .import_folder(ImportFolderCommand {
+                folder: "/tmp".to_string(),
+                cache_root: "cache".to_string(),
+            })
+            .expect("import should work");
+        assert_eq!(report.newly_imported, 1);
+
+        let image = service
+            .list_images(ListImagesCommand)
+            .expect("list should work")
+            .into_iter()
+            .next()
+            .expect("one image");
+
+        let params = EditParams {
+            exposure: 0.5,
+            contrast: 0.1,
+            temperature: -5.0,
+            tint: 2.0,
+            highlights: -10.0,
+            shadows: 8.0,
+        };
+
+        service
+            .set_edit(SetEditCommand {
+                image_id: image.id,
+                params,
+            })
+            .expect("set edit should work");
+
+        let loaded = service
+            .show_edit(ShowEditCommand { image_id: image.id })
+            .expect("show edit should work");
+        assert_eq!(loaded, params);
     }
 }

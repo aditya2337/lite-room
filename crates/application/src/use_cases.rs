@@ -1,3 +1,4 @@
+use lite_room_domain::EditParams;
 use lite_room_domain::ImageId;
 
 #[derive(Debug, Clone, Default)]
@@ -15,4 +16,15 @@ pub struct ListImagesCommand;
 #[derive(Debug, Clone, Copy)]
 pub struct OpenImageCommand {
     pub image_id: ImageId,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct ShowEditCommand {
+    pub image_id: ImageId,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct SetEditCommand {
+    pub image_id: ImageId,
+    pub params: EditParams,
 }
