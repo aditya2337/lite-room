@@ -1,10 +1,12 @@
 pub mod fs;
 pub mod migrations;
 pub mod presenters;
+pub mod preview;
 pub mod sqlite;
 
 pub use fs::{FsThumbnailGenerator, SystemClock, WalkdirFileScanner};
 pub use presenters::{present_decoded, present_edit_params, present_image_row};
+pub use preview::BackgroundPreviewPipeline;
 pub use sqlite::SqliteCatalogRepository;
 
 use lite_room_application::ApplicationError;

@@ -374,6 +374,7 @@ dependencies = [
 name = "lite-room-drivers"
 version = "0.1.0"
 dependencies = [
+ "image",
  "lite-room-adapters",
  "lite-room-application",
  "lite-room-domain",

@@ -1,5 +1,6 @@
 use lite_room_domain::EditParams;
 use lite_room_domain::ImageId;
+use lite_room_domain::PreviewRequest;
 
 #[derive(Debug, Clone, Default)]
 pub struct BootstrapCatalogCommand;
@@ -28,3 +29,14 @@ pub struct SetEditCommand {
     pub image_id: ImageId,
     pub params: EditParams,
 }
+
+#[derive(Debug, Clone, Copy)]
+pub struct SubmitPreviewCommand {
+    pub request: PreviewRequest,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct PollPreviewCommand;
+
+#[derive(Debug, Clone, Default)]
+pub struct PreviewMetricsQuery;

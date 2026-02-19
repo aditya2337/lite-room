@@ -50,3 +50,8 @@ Run these after architectural changes:
 - `cargo check -p lite-room-drivers`
 - `cargo test --workspace`
 - `cargo clippy --all-targets --all-features -- -D warnings`
+
+## Documentation Path Rule
+
+When writing paths in repository Markdown docs, do not use machine-specific absolute prefixes like `/Users/<name>/...`.
+Use repository-rooted paths that start with `/lite-room/...` instead.

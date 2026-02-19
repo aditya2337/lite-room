@@ -82,17 +82,17 @@ Exit criteria:
 
 ## Phase 4: GPU Preview Pipeline
 
-Overall status: `Not Started`
+Overall status: `In Progress`
 
 Goals:
 - [ ] Move edit transforms to wgpu compute/render stages.
 - [ ] Achieve responsive real-time preview under target conditions.
-- [ ] Implement stale render cancellation and latest-state prioritization.
+- [x] Implement stale render cancellation and latest-state prioritization.
 
 Deliverables:
 - [ ] GPU shader stages for v1 pipeline.
-- [ ] Preview job scheduling and cancellation logic.
-- [ ] Render timing instrumentation.
+- [x] Preview job scheduling and cancellation logic.
+- [x] Render timing instrumentation.
 
 Exit criteria:
 - [ ] Preview update p95 under 50 ms for 24 MP scaled preview on target hardware.

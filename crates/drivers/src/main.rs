@@ -6,8 +6,9 @@ use std::process::ExitCode;
 
 use config::AppConfig;
 use lite_room_adapters::{
-    present_decoded, present_edit_params, present_image_row, FsThumbnailGenerator,
-    ImageCrateDecoder, SqliteCatalogRepository, SystemClock, WalkdirFileScanner,
+    present_decoded, present_edit_params, present_image_row, BackgroundPreviewPipeline,
+    FsThumbnailGenerator, ImageCrateDecoder, SqliteCatalogRepository, SystemClock,
+    WalkdirFileScanner,
 };
 use lite_room_application::{
     ApplicationService, BootstrapCatalogCommand, ImportFolderCommand, ListImagesCommand,
@@ -48,6 +49,7 @@ fn build_application_service(config: &AppConfig) -> ApplicationService {
         Box::new(FsThumbnailGenerator),
         Box::new(ImageCrateDecoder),
         Box::new(SystemClock),
+        Box::new(BackgroundPreviewPipeline::new()),
     )
 }
 
@@ -142,6 +144,7 @@ fn run_command(
                 .map_err(|error| CommandError::Runtime(error.to_string()))?;
             let image_count = images.len();
             let active_image_id = images.first().map(|image| image.id);
+            let active_image_path = images.first().map(|image| image.file_path.clone());
             let initial_params = if let Some(image_id) = active_image_id {
                 service
                     .show_edit(ShowEditCommand { image_id })
@@ -155,6 +158,7 @@ fn run_command(
                 &config.cache_dir,
                 image_count,
                 active_image_id,
+                active_image_path,
                 initial_params,
             )
             .map_err(CommandError::Runtime)

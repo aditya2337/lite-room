@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use lite_room_domain::{ImageId, ImageKind, ImageRecord};
+use lite_room_domain::{ImageId, ImageKind, ImageRecord, PreviewFrame, PreviewMetrics, PreviewRequest};
 
 use crate::ApplicationError;
 
@@ -107,4 +107,10 @@ pub trait ImageDecoder {
 
 pub trait Clock {
     fn now_timestamp_string(&self) -> String;
+}
+
+pub trait PreviewPipeline {
+    fn submit_preview(&self, request: PreviewRequest) -> Result<(), ApplicationError>;
+    fn try_receive_preview(&self) -> Result<Option<PreviewFrame>, ApplicationError>;
+    fn metrics(&self) -> Result<PreviewMetrics, ApplicationError>;
 }

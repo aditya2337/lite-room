@@ -13,3 +13,4 @@ lite-room-domain = { path = "../domain" }
 lite-room-application = { path = "../application" }
 lite-room-adapters = { path = "../adapters" }
 minifb = "0.25.0"
+image = { version = "=0.24.9", default-features = false, features = ["jpeg"] }

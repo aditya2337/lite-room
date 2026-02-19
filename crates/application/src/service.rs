@@ -1,9 +1,12 @@
-use lite_room_domain::{DecodedImage, EditParams, ImageRecord, ImportReport};
+use lite_room_domain::{
+    DecodedImage, EditParams, ImageRecord, ImportReport, PreviewFrame, PreviewMetrics,
+};
 use serde_json::json;
 
 use crate::{
-    ApplicationError, BootstrapCatalogCommand, CatalogRepository, Clock, FileScanner, ImageDecoder,
-    ImportFolderCommand, ListImagesCommand, OpenImageCommand, SetEditCommand, ShowEditCommand,
+    ApplicationError, BootstrapCatalogCommand, CatalogRepository, Clock, FileScanner,
+    ImageDecoder, ImportFolderCommand, ListImagesCommand, OpenImageCommand, PollPreviewCommand,
+    PreviewMetricsQuery, PreviewPipeline, SetEditCommand, ShowEditCommand, SubmitPreviewCommand,
     ThumbnailGenerator,
 };
 
@@ -13,6 +16,7 @@ pub struct ApplicationService {
     thumbnails: Box<dyn ThumbnailGenerator>,
     decoder: Box<dyn ImageDecoder>,
     clock: Box<dyn Clock>,
+    preview: Box<dyn PreviewPipeline>,
 }
 
 impl ApplicationService {
@@ -22,6 +26,7 @@ impl ApplicationService {
         thumbnails: Box<dyn ThumbnailGenerator>,
         decoder: Box<dyn ImageDecoder>,
         clock: Box<dyn Clock>,
+        preview: Box<dyn PreviewPipeline>,
     ) -> Self {
         Self {
             catalog,
@@ -29,6 +34,7 @@ impl ApplicationService {
             thumbnails,
             decoder,
             clock,
+            preview,
         }
     }
 
@@ -156,6 +162,25 @@ impl ApplicationService {
             .upsert_edit(command.image_id, &edit_json, &now)?;
         Ok(())
     }
+
+    pub fn submit_preview(&self, command: SubmitPreviewCommand) -> Result<(), ApplicationError> {
+        command.request.params.validate()?;
+        self.preview.submit_preview(command.request)
+    }
+
+    pub fn poll_preview(
+        &self,
+        _command: PollPreviewCommand,
+    ) -> Result<Option<PreviewFrame>, ApplicationError> {
+        self.preview.try_receive_preview()
+    }
+
+    pub fn preview_metrics(
+        &self,
+        _query: PreviewMetricsQuery,
+    ) -> Result<PreviewMetrics, ApplicationError> {
+        self.preview.metrics()
+    }
 }
 
 #[cfg(test)]
@@ -172,6 +197,32 @@ mod tests {
         next_id: std::cell::Cell<i64>,
         images: std::cell::RefCell<HashMap<i64, ImageRecord>>,
         edits: std::cell::RefCell<HashMap<i64, crate::StoredEdit>>,
+    }
+
+    #[derive(Default)]
+    struct FakePreviewPipeline {
+        submitted: std::cell::RefCell<Vec<lite_room_domain::PreviewRequest>>,
+        responses: std::cell::RefCell<Vec<lite_room_domain::PreviewFrame>>,
+    }
+
+    impl PreviewPipeline for FakePreviewPipeline {
+        fn submit_preview(
+            &self,
+            request: lite_room_domain::PreviewRequest,
+        ) -> Result<(), ApplicationError> {
+            self.submitted.borrow_mut().push(request);
+            Ok(())
+        }
+
+        fn try_receive_preview(
+            &self,
+        ) -> Result<Option<lite_room_domain::PreviewFrame>, ApplicationError> {
+            Ok(self.responses.borrow_mut().pop())
+        }
+
+        fn metrics(&self) -> Result<lite_room_domain::PreviewMetrics, ApplicationError> {
+            Ok(lite_room_domain::PreviewMetrics::default())
+        }
     }
 
     impl FakeCatalog {
@@ -371,6 +422,7 @@ mod tests {
             Box::new(FakeThumbs),
             Box::new(FakeDecoder),
             Box::new(FakeClock),
+            Box::<FakePreviewPipeline>::default(),
         );
 
         service
@@ -409,6 +461,7 @@ mod tests {
             Box::new(FakeThumbs),
             Box::new(FakeDecoder),
             Box::new(FakeClock),
+            Box::<FakePreviewPipeline>::default(),
         );
 
         let result = service.open_image(OpenImageCommand {
@@ -428,6 +481,7 @@ mod tests {
             Box::new(FakeThumbs),
             Box::new(FakeDecoder),
             Box::new(FakeClock),
+            Box::<FakePreviewPipeline>::default(),
         );
 
         let report = service
