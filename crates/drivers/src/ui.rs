@@ -1,12 +1,13 @@
 use std::time::{Duration, Instant};
 
+use font8x8::UnicodeFonts;
 use image::io::Reader as ImageReader;
 use lite_room_application::{
-    ApplicationService, PollPreviewCommand, PreviewMetricsQuery, SetEditCommand,
-    SubmitPreviewCommand,
+    ApplicationService, ListImagesCommand, PollPreviewCommand, PreviewMetricsQuery,
+    SetEditCommand, ShowEditCommand, SubmitPreviewCommand,
 };
-use lite_room_domain::{EditParams, ImageId, PreviewFrame, PreviewMetrics, PreviewRequest};
-use minifb::{Key, MouseButton, MouseMode, Window, WindowOptions};
+use lite_room_domain::{EditParams, ImageId, PreviewFrame, PreviewMetrics};
+use minifb::{Key, KeyRepeat, MouseButton, MouseMode, Window, WindowOptions};
 
 const SLIDER_MIN: f32 = -5.0;
 const SLIDER_MAX: f32 = 5.0;
@@ -82,9 +83,11 @@ struct PreviewCanvas {
 
 #[derive(Debug, Clone, Copy)]
 struct TitleTelemetry<'a> {
-    latest_frame: Option<PreviewFrame>,
+    latest_frame: Option<&'a PreviewFrame>,
     metrics: &'a PreviewMetrics,
     preview_canvas: Option<&'a PreviewCanvas>,
+    image_index: Option<(usize, usize)>,
+    focused_slider: Option<SliderField>,
 }
 
 pub fn launch_window(
@@ -119,33 +122,73 @@ pub fn launch_window(
     let mut active_drag: Option<SliderField> = None;
     let mut was_mouse_down = false;
     let mut latest_frame: Option<PreviewFrame> = None;
-    let preview = load_preview_canvas(image_path.as_deref(), width, height);
+    let mut active_image_id = image_id;
+    let mut active_image_path = image_path;
+    let mut preview = load_preview_canvas(active_image_path.as_deref(), width, height);
+    let catalog_images = service
+        .list_images(ListImagesCommand)
+        .map_err(|error| format!("list images failed: {error}"))?;
+    let mut active_index = active_image_id.and_then(|id| {
+        catalog_images
+            .iter()
+            .enumerate()
+            .find(|(_, image)| image.id == id)
+            .map(|(index, _)| index)
+    });
 
-    if let Some(active_image_id) = image_id {
-        submit_preview(service, active_image_id, params, width as u32, height as u32)?;
+    if let Some(id) = active_image_id {
+        submit_preview(service, id, params, width as u32, height as u32)?;
     }
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
+        let go_prev = window.is_key_pressed(Key::Left, KeyRepeat::No);
+        let go_next = window.is_key_pressed(Key::Right, KeyRepeat::No);
+        if !catalog_images.is_empty() && (go_prev || go_next) {
+            if autosave.is_dirty() {
+                if let Some(id) = active_image_id {
+                    persist_edit(service, id, params)?;
+                }
+                autosave.clear();
+            }
+
+            let len = catalog_images.len();
+            let current = active_index.unwrap_or(0);
+            let next = if go_next {
+                (current + 1) % len
+            } else {
+                (current + len - 1) % len
+            };
+
+            let next_image = &catalog_images[next];
+            active_index = Some(next);
+            active_image_id = Some(next_image.id);
+            active_image_path = Some(next_image.file_path.clone());
+            params = service
+                .show_edit(ShowEditCommand {
+                    image_id: next_image.id,
+                })
+                .map_err(|error| format!("show-edit failed during image switch: {error}"))?;
+            preview = load_preview_canvas(active_image_path.as_deref(), width, height);
+            latest_frame = None;
+            submit_preview(service, next_image.id, params, width as u32, height as u32)?;
+        }
+
         let mouse_down = window.get_mouse_down(MouseButton::Left);
         let mouse_pos = window.get_mouse_pos(MouseMode::Clamp);
+        let hovered_slider = mouse_pos
+            .and_then(|(mouse_x, mouse_y)| slider_at_position(mouse_x, mouse_y, &sliders, width));
 
         if mouse_down {
-            if let Some((mouse_x, mouse_y)) = mouse_pos {
+            if let Some((mouse_x, _)) = mouse_pos {
                 if !was_mouse_down {
-                    active_drag = slider_at_position(mouse_x, mouse_y, &sliders, width);
+                    active_drag = hovered_slider;
                 }
                 if let Some(field) = active_drag {
                     if update_param_from_mouse(&mut params, field, mouse_x, width) {
                         let now_ms = start.elapsed().as_millis() as u64;
                         autosave.mark_dirty(now_ms);
-                        if let Some(active_image_id) = image_id {
-                            submit_preview(
-                                service,
-                                active_image_id,
-                                params,
-                                width as u32,
-                                height as u32,
-                            )?;
+                        if let Some(id) = active_image_id {
+                            submit_preview(service, id, params, width as u32, height as u32)?;
                         }
                     }
                 }
@@ -158,8 +201,8 @@ pub fn launch_window(
 
         let now_ms = start.elapsed().as_millis() as u64;
         if autosave.should_flush(now_ms) {
-            if let Some(active_image_id) = image_id {
-                persist_edit(service, active_image_id, params)?;
+            if let Some(id) = active_image_id {
+                persist_edit(service, id, params)?;
             }
             autosave.clear();
         }
@@ -168,34 +211,43 @@ pub fn launch_window(
         draw_header(&mut buffer, width);
         draw_preview_shadow(&mut buffer, width, height);
         draw_preview_panel(&mut buffer, width, height, &preview);
-        draw_sliders(&mut buffer, width, height, &sliders, params);
+        draw_sliders(
+            &mut buffer,
+            width,
+            height,
+            &sliders,
+            params,
+            active_drag.or(hovered_slider),
+            active_index.map(|index| (index + 1, catalog_images.len())),
+        );
 
         if let Some(frame) = service
             .poll_preview(PollPreviewCommand)
             .map_err(|error| format!("preview poll failed: {error}"))?
         {
+            preview = Some(preview_canvas_from_frame(&frame, width, height));
             latest_frame = Some(frame);
         }
         let metrics = service
             .preview_metrics(PreviewMetricsQuery)
             .map_err(|error| format!("preview metrics failed: {error}"))?;
 
-        if let Some((mouse_x, mouse_y)) = mouse_pos {
-            if let Some(hovered) = slider_at_position(mouse_x, mouse_y, &sliders, width) {
-                draw_slider_hover(&mut buffer, width, hovered, &sliders);
-            }
+        if let Some(hovered) = hovered_slider {
+            draw_slider_hover(&mut buffer, width, hovered, &sliders);
         }
 
         window.set_title(&build_window_title(
             catalog_path,
             cache_dir,
             image_count,
-            image_id,
+            active_image_id,
             params,
             TitleTelemetry {
-                latest_frame,
+                latest_frame: latest_frame.as_ref(),
                 metrics: &metrics,
                 preview_canvas: preview.as_ref(),
+                image_index: active_index.map(|index| (index + 1, catalog_images.len())),
+                focused_slider: active_drag.or(hovered_slider),
             },
         ));
 
@@ -205,8 +257,8 @@ pub fn launch_window(
     }
 
     if autosave.is_dirty() {
-        if let Some(active_image_id) = image_id {
-            persist_edit(service, active_image_id, params)?;
+        if let Some(id) = active_image_id {
+            persist_edit(service, id, params)?;
         }
     }
 
@@ -232,12 +284,10 @@ fn submit_preview(
 ) -> Result<(), String> {
     service
         .submit_preview(SubmitPreviewCommand {
-            request: PreviewRequest {
-                image_id,
-                params,
-                target_width,
-                target_height,
-            },
+            image_id,
+            params,
+            target_width,
+            target_height,
         })
         .map_err(|error| format!("preview submit failed: {error}"))
 }
@@ -361,6 +411,48 @@ fn draw_preview_panel(buffer: &mut [u32], width: usize, height: usize, preview: 
     }
 }
 
+fn preview_canvas_from_frame(
+    frame: &PreviewFrame,
+    window_width: usize,
+    window_height: usize,
+) -> PreviewCanvas {
+    let src_width = frame.width as usize;
+    let src_height = frame.height as usize;
+    if src_width == 0 || src_height == 0 || frame.pixels.is_empty() {
+        return PreviewCanvas {
+            width: 1,
+            height: 1,
+            pixels: vec![0_u32],
+        };
+    }
+
+    let panel_left = preview_panel_left();
+    let panel_right = preview_panel_right(window_width);
+    let panel_top = preview_panel_top();
+    let panel_bottom = preview_panel_bottom(window_height);
+    let max_width = panel_right.saturating_sub(panel_left + 26).max(1);
+    let max_height = panel_bottom.saturating_sub(panel_top + 26).max(1);
+
+    let scale = (max_width as f32 / src_width as f32).min(max_height as f32 / src_height as f32);
+    let dst_width = ((src_width as f32 * scale).max(1.0)).round() as usize;
+    let dst_height = ((src_height as f32 * scale).max(1.0)).round() as usize;
+
+    let mut pixels = vec![0_u32; dst_width * dst_height];
+    for y in 0..dst_height {
+        let src_y = y * src_height / dst_height;
+        for x in 0..dst_width {
+            let src_x = x * src_width / dst_width;
+            pixels[y * dst_width + x] = frame.pixels[src_y * src_width + src_x];
+        }
+    }
+
+    PreviewCanvas {
+        width: dst_width,
+        height: dst_height,
+        pixels,
+    }
+}
+
 fn slider_specs() -> [SliderSpec; 6] {
     let start = control_panel_top() + 126;
     let stride = SLIDER_HEIGHT + SLIDER_GAP;
@@ -434,14 +526,60 @@ fn draw_sliders(
     height: usize,
     sliders: &[SliderSpec],
     params: EditParams,
+    focused_slider: Option<SliderField>,
+    image_index: Option<(usize, usize)>,
 ) {
     draw_control_panel(buffer, width, height);
+    draw_control_text(buffer, width, sliders, params, focused_slider, image_index);
     for slider in sliders {
         draw_slider_shell(buffer, width, slider.top);
         let value = get_param_value(params, slider.field);
         let x = value_to_x(value, width);
         draw_slider_track(buffer, width, slider.top, x, slider.color);
         draw_slider_knob(buffer, width, x, slider.top, slider.color);
+        let label = format!("{} {:+.2}", slider_label(slider.field), value);
+        draw_text(
+            buffer,
+            width,
+            slider_left(width) + 8,
+            slider.top + 6,
+            &label,
+            0x4A3E2E,
+        );
+    }
+}
+
+fn draw_control_text(
+    buffer: &mut [u32],
+    width: usize,
+    sliders: &[SliderSpec],
+    _params: EditParams,
+    focused_slider: Option<SliderField>,
+    image_index: Option<(usize, usize)>,
+) {
+    let left = control_panel_left(width);
+    let top = control_panel_top();
+    let image_text = image_index
+        .map(|(current, total)| format!("IMAGE {}/{}", current, total))
+        .unwrap_or_else(|| "IMAGE 0/0".to_string());
+    draw_text(buffer, width, left + 22, top + 48, &image_text, 0x1B1F26);
+    draw_text(
+        buffer,
+        width,
+        left + 22,
+        top + 64,
+        "LEFT/RIGHT: SWITCH IMAGE",
+        0x4A3E2E,
+    );
+
+    let focus_text = focused_slider
+        .map(|field| format!("{}: {}", slider_label(field), slider_effect(field)))
+        .unwrap_or_else(|| "HOVER A SLIDER TO SEE EFFECT".to_string());
+    draw_text(buffer, width, left + 22, top + 80, &focus_text, 0x4A3E2E);
+
+    if let Some(first) = sliders.first() {
+        let y = first.top.saturating_sub(16);
+        draw_text(buffer, width, slider_left(width) + 8, y, "SLIDER + VALUE", 0x6A5B47);
     }
 }
 
@@ -531,6 +669,14 @@ fn draw_header(buffer: &mut [u32], width: usize) {
     fill_rect(buffer, width, left + 240, HEADER_TOP + 8, 160, accent_h, 0xF7AE3D);
     fill_rect(buffer, width, right.saturating_sub(210), HEADER_TOP + 8, 94, accent_h, 0x4E78D5);
     fill_rect(buffer, width, right.saturating_sub(108), HEADER_TOP + 8, 82, accent_h, 0x1B1F26);
+    draw_text(
+        buffer,
+        width,
+        left + 14,
+        HEADER_TOP + 24,
+        "LITE-ROOM PREVIEW",
+        0xFFFFFF,
+    );
 }
 
 fn fill_rect(buffer: &mut [u32], width: usize, left: usize, top: usize, w: usize, h: usize, color: u32) {
@@ -748,6 +894,28 @@ fn set_pixel(buffer: &mut [u32], width: usize, x: usize, y: usize, color: u32) {
     }
 }
 
+fn draw_text(buffer: &mut [u32], width: usize, x: usize, y: usize, text: &str, color: u32) {
+    let mut cursor_x = x;
+    for ch in text.chars() {
+        if ch == '\n' {
+            continue;
+        }
+        draw_char(buffer, width, cursor_x, y, ch, color);
+        cursor_x = cursor_x.saturating_add(8);
+    }
+}
+
+fn draw_char(buffer: &mut [u32], width: usize, x: usize, y: usize, ch: char, color: u32) {
+    let glyph = font8x8::BASIC_FONTS.get(ch).unwrap_or([0; 8]);
+    for (row, bits) in glyph.iter().enumerate() {
+        for col in 0..8 {
+            if (bits >> col) & 1 == 1 {
+                set_pixel(buffer, width, x + col, y + row, color);
+            }
+        }
+    }
+}
+
 fn field_name(field: SliderField) -> &'static str {
     match field {
         SliderField::Exposure => "exposure",
@@ -756,6 +924,17 @@ fn field_name(field: SliderField) -> &'static str {
         SliderField::Tint => "tint",
         SliderField::Highlights => "highlights",
         SliderField::Shadows => "shadows",
+    }
+}
+
+fn slider_label(field: SliderField) -> &'static str {
+    match field {
+        SliderField::Exposure => "EXPOSURE",
+        SliderField::Contrast => "CONTRAST",
+        SliderField::Temperature => "TEMPERATURE",
+        SliderField::Tint => "TINT",
+        SliderField::Highlights => "HIGHLIGHTS",
+        SliderField::Shadows => "SHADOWS",
     }
 }
 
@@ -820,23 +999,51 @@ fn build_window_title(
         .preview_canvas
         .map(|canvas| format!("canvas={}x{}", canvas.width, canvas.height))
         .unwrap_or_else(|| "canvas=none".to_string());
+    let slider_help = telemetry
+        .focused_slider
+        .map(|field| format!("focus={} ({})", field_name(field), slider_effect(field)))
+        .unwrap_or_else(|| "focus=none (hover or drag slider)".to_string());
+    let nav_info = telemetry
+        .image_index
+        .map(|(current, total)| format!("image {}/{} | left/right switch", current, total))
+        .unwrap_or_else(|| "image 0/0 | left/right switch".to_string());
 
     match image_id {
         Some(image_id) => format!(
-            "lite-room | catalog={} | cache={} | images={} | edit image={} | drag sliders | {} | {} | {} | {} | esc quit",
+            "lite-room | catalog={} | cache={} | images={} | {} | edit image={} | drag sliders | {} | {} | {} | {} | {} | esc quit",
             catalog_path,
             cache_dir,
             image_count,
+            nav_info,
             image_id.get(),
             build_slider_status(params),
             preview_info,
             metric_info,
-            canvas_info
+            canvas_info,
+            slider_help
         ),
         None => format!(
-            "lite-room | catalog={} | cache={} | images={} | no image to edit | {} | {} | {} | esc quit",
-            catalog_path, cache_dir, image_count, preview_info, metric_info, canvas_info
+            "lite-room | catalog={} | cache={} | images={} | {} | no image to edit | {} | {} | {} | {} | esc quit",
+            catalog_path,
+            cache_dir,
+            image_count,
+            nav_info,
+            preview_info,
+            metric_info,
+            canvas_info,
+            slider_help
         ),
+    }
+}
+
+fn slider_effect(field: SliderField) -> &'static str {
+    match field {
+        SliderField::Exposure => "overall brightness",
+        SliderField::Contrast => "light-dark separation",
+        SliderField::Temperature => "warm to cool color balance",
+        SliderField::Tint => "green to magenta balance",
+        SliderField::Highlights => "bright area detail",
+        SliderField::Shadows => "dark area detail",
     }
 }
 

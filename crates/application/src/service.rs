@@ -1,5 +1,6 @@
 use lite_room_domain::{
     DecodedImage, EditParams, ImageRecord, ImportReport, PreviewFrame, PreviewMetrics,
+    PreviewRequest,
 };
 use serde_json::json;
 
@@ -164,8 +165,24 @@ impl ApplicationService {
     }
 
     pub fn submit_preview(&self, command: SubmitPreviewCommand) -> Result<(), ApplicationError> {
-        command.request.params.validate()?;
-        self.preview.submit_preview(command.request)
+        command.params.validate()?;
+        let image = self
+            .catalog
+            .find_image_by_id(command.image_id)?
+            .ok_or_else(|| {
+                ApplicationError::NotFound(format!(
+                    "image not found for id={}",
+                    command.image_id.get()
+                ))
+            })?;
+
+        self.preview.submit_preview(PreviewRequest {
+            image_id: command.image_id,
+            source_path: image.file_path,
+            params: command.params,
+            target_width: command.target_width,
+            target_height: command.target_height,
+        })
     }
 
     pub fn poll_preview(

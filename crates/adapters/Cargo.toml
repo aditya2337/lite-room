@@ -11,6 +11,8 @@ image = { version = "=0.24.9", default-features = false, features = ["jpeg"] }
 rusqlite = { version = "=0.31.0", features = ["bundled"] }
 serde_json = "1.0.105"
 walkdir = "2.5.0"
+wgpu = "0.19.4"
+pollster = "0.3.0"
 
 [dev-dependencies]
 tempfile = "=3.17.1"

@@ -14,3 +14,6 @@ license = "MIT"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
+
+[patch.crates-io]
+indexmap = { path = "third_party/indexmap-2.13.0" }

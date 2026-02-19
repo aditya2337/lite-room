@@ -14,3 +14,4 @@ lite-room-application = { path = "../application" }
 lite-room-adapters = { path = "../adapters" }
 minifb = "0.25.0"
 image = { version = "=0.24.9", default-features = false, features = ["jpeg"] }
+font8x8 = "0.3.1"

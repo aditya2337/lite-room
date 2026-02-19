@@ -1,6 +1,5 @@
 use lite_room_domain::EditParams;
 use lite_room_domain::ImageId;
-use lite_room_domain::PreviewRequest;
 
 #[derive(Debug, Clone, Default)]
 pub struct BootstrapCatalogCommand;
@@ -32,7 +31,10 @@ pub struct SetEditCommand {
 
 #[derive(Debug, Clone, Copy)]
 pub struct SubmitPreviewCommand {
-    pub request: PreviewRequest,
+    pub image_id: ImageId,
+    pub params: EditParams,
+    pub target_width: u32,
+    pub target_height: u32,
 }
 
 #[derive(Debug, Clone, Default)]
