@@ -11,9 +11,11 @@ lite-room is a lightweight, non-destructive desktop RAW photo editor focused on 
 
 ## Design Docs
 
+- `/lite-room/docs/README.md`: documentation index with quick links
 - `/lite-room/APP_MOCK_DESIGN.md`: app-wide mock design and feature placement guide for agents
 - `/lite-room/FIGMA_APP_BLUEPRINT.md`: full Figma page/frame/component blueprint for app UI design
 - `/lite-room/ARCHITECTURE.md`: architecture design details
+- `/lite-room/docs/walkthrough/README.md`: step-by-step runtime walkthrough index (`import` path first)
 - `/lite-room/SPEC.md`: product vision and feature scope
 
 Dependency direction is strictly inward:
