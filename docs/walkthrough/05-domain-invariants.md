@@ -1,8 +1,8 @@
 # Domain Invariants
 
 Domain files:
-- [/lite-room/crates/domain/src/image.rs](/lite-room/crates/domain/src/image.rs)
-- [/lite-room/crates/domain/src/edit.rs](/lite-room/crates/domain/src/edit.rs)
+- [/lite-room/crates/domain/src/image.rs](../../crates/domain/src/image.rs)
+- [/lite-room/crates/domain/src/edit.rs](../../crates/domain/src/edit.rs)
 
 ## 1. `ImageId` must be positive
 `ImageId::new(value)` rejects values `<= 0`.

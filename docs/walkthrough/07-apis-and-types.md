@@ -2,7 +2,7 @@
 
 ## Application service methods
 File:
-- [/lite-room/crates/application/src/service.rs](/lite-room/crates/application/src/service.rs)
+- [/lite-room/crates/application/src/service.rs](../../crates/application/src/service.rs)
 
 Key methods:
 - `bootstrap_catalog`
@@ -17,7 +17,7 @@ Key methods:
 
 ## Application port traits
 File:
-- [/lite-room/crates/application/src/ports.rs](/lite-room/crates/application/src/ports.rs)
+- [/lite-room/crates/application/src/ports.rs](../../crates/application/src/ports.rs)
 
 Primary traits:
 - `CatalogRepository`
@@ -29,9 +29,9 @@ Primary traits:
 
 ## Domain DTOs
 Files:
-- [/lite-room/crates/domain/src/image.rs](/lite-room/crates/domain/src/image.rs)
-- [/lite-room/crates/domain/src/edit.rs](/lite-room/crates/domain/src/edit.rs)
-- [/lite-room/crates/domain/src/preview.rs](/lite-room/crates/domain/src/preview.rs)
+- [/lite-room/crates/domain/src/image.rs](../../crates/domain/src/image.rs)
+- [/lite-room/crates/domain/src/edit.rs](../../crates/domain/src/edit.rs)
+- [/lite-room/crates/domain/src/preview.rs](../../crates/domain/src/preview.rs)
 
 Primary DTOs:
 - `ImageId`, `ImageRecord`, `ImportReport`, `DecodedImage`

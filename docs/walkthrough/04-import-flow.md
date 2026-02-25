@@ -4,7 +4,7 @@ This is the highest-value path to understand first.
 
 ## 1. Driver receives command
 File:
-- [/lite-room/crates/drivers/src/main.rs](/lite-room/crates/drivers/src/main.rs)
+- [/lite-room/crates/drivers/src/main.rs](../../crates/drivers/src/main.rs)
 
 Flow:
 1. `parse_command()` returns `Command::Import { folder }`.
@@ -13,7 +13,7 @@ Flow:
 
 ## 2. Application orchestrates use-case
 File:
-- [/lite-room/crates/application/src/service.rs](/lite-room/crates/application/src/service.rs)
+- [/lite-room/crates/application/src/service.rs](../../crates/application/src/service.rs)
 
 Inside `import_folder()`:
 1. Validate non-empty `folder` and `cache_root`.
@@ -29,7 +29,7 @@ Inside `import_folder()`:
 
 ## 3. Filesystem scanner adapter
 File:
-- [/lite-room/crates/adapters/src/fs/scanner.rs](/lite-room/crates/adapters/src/fs/scanner.rs)
+- [/lite-room/crates/adapters/src/fs/scanner.rs](../../crates/adapters/src/fs/scanner.rs)
 
 Responsibilities:
 1. Validate folder path is a directory.
@@ -39,8 +39,8 @@ Responsibilities:
 
 ## 4. SQLite catalog adapter
 Files:
-- [/lite-room/crates/adapters/src/sqlite/mod.rs](/lite-room/crates/adapters/src/sqlite/mod.rs)
-- [/lite-room/crates/adapters/src/sqlite/queries.rs](/lite-room/crates/adapters/src/sqlite/queries.rs)
+- [/lite-room/crates/adapters/src/sqlite/mod.rs](../../crates/adapters/src/sqlite/mod.rs)
+- [/lite-room/crates/adapters/src/sqlite/queries.rs](../../crates/adapters/src/sqlite/queries.rs)
 
 Responsibilities:
 1. Open DB connection.
@@ -50,7 +50,7 @@ Responsibilities:
 
 ## 5. Thumbnail adapter
 File:
-- [/lite-room/crates/adapters/src/fs/thumbs.rs](/lite-room/crates/adapters/src/fs/thumbs.rs)
+- [/lite-room/crates/adapters/src/fs/thumbs.rs](../../crates/adapters/src/fs/thumbs.rs)
 
 Responsibilities:
 1. Build cache path `<cache_root>/thumbs/<image_id>.jpg`.
@@ -60,5 +60,5 @@ Responsibilities:
 
 ## 6. Schema and migrations
 Files:
-- [/lite-room/crates/adapters/src/migrations/mod.rs](/lite-room/crates/adapters/src/migrations/mod.rs)
-- [/lite-room/crates/adapters/src/migrations/0001_initial.sql](/lite-room/crates/adapters/src/migrations/0001_initial.sql)
+- [/lite-room/crates/adapters/src/migrations/mod.rs](../../crates/adapters/src/migrations/mod.rs)
+- [/lite-room/crates/adapters/src/migrations/0001_initial.sql](../../crates/adapters/src/migrations/0001_initial.sql)

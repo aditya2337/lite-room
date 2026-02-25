@@ -1,12 +1,12 @@
 # Driver Entrypoint and Command Dispatch
 
 Primary file:
-- [/lite-room/crates/drivers/src/main.rs](/lite-room/crates/drivers/src/main.rs)
+- [/lite-room/crates/drivers/src/main.rs](../../crates/drivers/src/main.rs)
 
 ## `main()` startup flow
 1. Initialize logging: `logging::init_logging()`.
 2. Read CLI args into `Vec<String>`.
-3. Load defaults from [/lite-room/crates/drivers/src/config.rs](/lite-room/crates/drivers/src/config.rs).
+3. Load defaults from [/lite-room/crates/drivers/src/config.rs](../../crates/drivers/src/config.rs).
 4. Build `ApplicationService` via dependency injection.
 5. Bootstrap catalog schema (`bootstrap_catalog`).
 6. Parse CLI command (`parse_command`).

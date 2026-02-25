@@ -14,4 +14,4 @@ Then it maps that same mental model to:
 - `lite-room ui`
 
 Use this index to move through short focused docs:
-- [/lite-room/docs/walkthrough/README.md](/lite-room/docs/walkthrough/README.md)
+- [/lite-room/docs/walkthrough/README.md](./README.md)

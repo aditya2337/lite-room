@@ -9,10 +9,10 @@ After understanding `import`, map the same flow to the rest.
 4. Presenter formats rows.
 
 Files:
-- [/lite-room/crates/drivers/src/main.rs](/lite-room/crates/drivers/src/main.rs)
-- [/lite-room/crates/application/src/service.rs](/lite-room/crates/application/src/service.rs)
-- [/lite-room/crates/adapters/src/sqlite/mod.rs](/lite-room/crates/adapters/src/sqlite/mod.rs)
-- [/lite-room/crates/adapters/src/presenters/mod.rs](/lite-room/crates/adapters/src/presenters/mod.rs)
+- [/lite-room/crates/drivers/src/main.rs](../../crates/drivers/src/main.rs)
+- [/lite-room/crates/application/src/service.rs](../../crates/application/src/service.rs)
+- [/lite-room/crates/adapters/src/sqlite/mod.rs](../../crates/adapters/src/sqlite/mod.rs)
+- [/lite-room/crates/adapters/src/presenters/mod.rs](../../crates/adapters/src/presenters/mod.rs)
 
 ## `open <image_id>`
 1. Driver parses and validates `ImageId`.
@@ -21,8 +21,8 @@ Files:
 4. Presenter prints dimensions and kind.
 
 Files:
-- [/lite-room/crates/adapters/src/lib.rs](/lite-room/crates/adapters/src/lib.rs)
-- [/lite-room/crates/application/src/service.rs](/lite-room/crates/application/src/service.rs)
+- [/lite-room/crates/adapters/src/lib.rs](../../crates/adapters/src/lib.rs)
+- [/lite-room/crates/application/src/service.rs](../../crates/application/src/service.rs)
 
 ## `show-edit <image_id>`
 1. Application loads edit JSON from catalog.
@@ -36,8 +36,8 @@ Files:
 
 ## `ui`
 Files:
-- [/lite-room/crates/drivers/src/ui.rs](/lite-room/crates/drivers/src/ui.rs)
-- [/lite-room/crates/adapters/src/preview/mod.rs](/lite-room/crates/adapters/src/preview/mod.rs)
+- [/lite-room/crates/drivers/src/ui.rs](../../crates/drivers/src/ui.rs)
+- [/lite-room/crates/adapters/src/preview/mod.rs](../../crates/adapters/src/preview/mod.rs)
 
 High-level loop:
 1. Load initial image state and params.
